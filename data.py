@@ -8,10 +8,12 @@ Created on Fri Oct 28 23:14:12 2022
 import datetime
 import os, os.path
 import pandas as pd
-
+import numpy as np
 from abc import ABCMeta, abstractmethod
 
 from event import MarketEvent
+
+
 
 class DataHandler(object):
     
@@ -26,12 +28,32 @@ class DataHandler(object):
         raise NotImplementedError("Should implement get_latest_bars()")
         
     @abstractmethod
+    def get_latest_bar(self, symbol):
+        
+        raise NotImplementedError("Should implement get_latest_bar()")
+        
+    @abstractmethod
     def update_bars(self):
         """
         Pushes trhe latest bar to the latest symbol structure for all
         symbols in the symbol list.
         """
         raise NotImplementedError("Should implement update_bars()")
+        
+    @abstractmethod
+    def get_latest_bar_value(self, symbol, val_type):
+        
+        raise NotImplementedError("Should implement get_latest_bar_value")
+        
+    @abstractmethod
+    def get_latest_bar_values(self, symbol, val_type, N=1):
+        
+        raise NotImplementedError("Should implement get_latest_bar_values")
+        
+    @abstractmethod
+    def get_latest_bar_datetime(self, symbol):
+        
+        raise NotImplementedError("Should implement get_latest_bar_datetime")
 
 class HistoricCSVDataHandler(DataHandler):
     """
@@ -115,8 +137,18 @@ class HistoricCSVDataHandler(DataHandler):
 
         """
         for b in self.symbol_data[symbol]:
-            yield tuple([symbol, datetime.datetime.strftime(b[0], '%Y-%m-%d %H:%M:%S'),
-                         b[1][0], b[1][1], b[1][2], b[1][3], b[1][4]])
+            # yield tuple([symbol, datetime.datetime.strftime(b[0], '%Y-%m-%d %H:%M:%S'),
+            #              b[1][0], b[1][1], b[1][2], b[1][3], b[1][4]])
+            yield b
+            
+    def get_latest_bar(self, symbol):
+        try:
+            bars_list = self.latest_symbol_data[symbol]
+        except KeyError:
+            print("Invalid symbol")
+            raise
+        else:
+            return bars_list[-1]
     
     
     def get_latest_bars(self, symbol, N=1):
@@ -154,12 +186,41 @@ class HistoricCSVDataHandler(DataHandler):
         for s in self.symbol_list:
             try:
                 bar = self._get_new_bar(s).next
-            except:
+            except StopIteration:
                 self.continue_backtest = False
             else:
                 if bar is not None:
                     self.latest_symbol_data[s].append(bar)
         self.events.put(MarketEvent())
+        
+    def get_latest_bar_datetime(self, symbol):
+        try:
+            bars_list = self.latest_symbol_data[symbol]
+        except KeyError:
+            print("Invalid symbol")
+            raise
+        else:
+            return bars_list[-1][0]
+        
+    def get_latest_bar_value(self, symbol, val_type):
+        try:
+            bars_list = self.latest_symbol_data[symbol]
+        except KeyError:
+            print("Invalid symbol")
+            raise
+        else:
+            return getattr(bars_list[-1][1], val_type)
+        
+    
+    def get_latest_bar_values(self, symbol, val_type, N=1):
+        try:
+            bars_list = self.get_latest_bars(symbol, N)
+        except KeyError:
+            print("Invalid symbol")
+            raise
+        else:
+            return np.array([getattr(b[1], val_type) for b in bars_list])
+        
         
     
     
