@@ -93,6 +93,7 @@ class OrderEvent(Event):
         
 class FillEvent(Event):
     """
+    完成的订单事件
     Encapsulates the notion of a Filled Order, as returned
     from a brokerage. Stores the quantity of an instrument
     acutally filled and at what price. In addition, stores
@@ -102,7 +103,7 @@ class FillEvent(Event):
                  direction, fill_cost, commission=None):
         """
         
-
+        当FillEvent被创建出来的时候就已经初始化好了这些 股票代码、方向、数量、交易费用等等 并传给其他层
         Parameters
         ----------
         timeindex : TYPE
@@ -130,7 +131,7 @@ class FillEvent(Event):
         self.symbol = symbol
         self.exchange = exchange
         self.quantity = quantity
-        self.direction = direction
+        self.direction = direction # 交易方向 1 0 -1
         self.fill_cost = fill_cost
         
         # Calculate commision
