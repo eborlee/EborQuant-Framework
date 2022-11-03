@@ -98,4 +98,20 @@ class Portfolio(object):
         d['total'] = self.initial_capital
         return d
     
-    
+    def update_timeindex(self, event):
+        """
+
+        Parameters
+        ----------
+        event: MarketEvent
+
+        Returns
+        -------
+
+        """
+        latest_datetime = self.bars.get_latest_bar_time(
+            self.symbol_list[0]
+        )
+
+        # update positions
+        #

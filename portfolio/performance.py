@@ -8,6 +8,7 @@ Created on Sun Oct 30 22:37:06 2022
 import numpy as np
 import pandas as pd
 
+# 未完
 def create_sharpe_ratio(returns, periods=252):
     
     return np.sqrt(periods) * (np.mean(returns)) / np.std(returns)
@@ -39,6 +40,7 @@ def create_drawdowns(pnl):
         drawdown[t] = hwm[t] - pnl[t]
         duration[t] = 0 if drawdown[t] == 0 else duration[t-1] + 1
     return drawdown, drawdown.max(), duration.max()
-    
+
+
 
 
