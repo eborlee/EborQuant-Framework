@@ -180,4 +180,82 @@ class Portfolio(object):
         # self.current_holdings['total'] -= (cost + fill.commission) # ?这total怎么会要减掉成本
         self.current_holdings['total'] -= fill.commission
 
+    def update_fill(self, event):
+        """
+        调用上面两个update方法来更新postions和holdings
+        Parameters
+        ----------
+        event
 
+        Returns
+        -------
+
+        """
+        if event.type == "FILL":
+            self.update_holdings_from_fill(event)
+            self.update_positions_from_fill(event)
+
+
+    def generate_naive_order(self, signal):
+        """
+        portfolio不仅要处理FillEvents， 还要处理OrderEvents（一经收到SignalEvents）
+        之所以叫naive是因为没有风控考量，信号发出就直接执行某个仓位比例的交易动作
+        Parameters
+        ----------
+        signal
+
+        Returns
+        -------
+
+        """
+        order = None
+
+        symbol = signal.symbol
+        direction = signal.signal_type
+        strength = signal.strength
+
+        mkt_quantity = 100
+        cur_quantity = self.current_positions[symbol]
+        order_type = "MKT"
+
+        if direction == "LONG" and cur_quantity == 0:
+            order = OrderEvent(symbol, order_type, mkt_quantity, 'BUY')
+        if direction == "SHORT" and cur_quantity == 0:
+            order = OrderEvent(symbol, order_type, mkt_quantity, 'SELL')
+        if direction == "EXIT" and cur_quantity > 0:
+            order = OrderEvent(symbol, order_type, abs(mkt_quantity), 'SELL')
+        if direction == "EXIT" and cur_quantity < 0:
+            order = OrderEvent(symbol, order_type, abs(mkt_quantity), 'BUY')
+
+        return order
+
+
+    def update_ginal(self, event):
+        if( event.type == "SIGNAL"):
+            order_event = self.generate_naive_order(event)
+            self.events.put(order_event)
+
+    def create_equity_curve_dataframe(self):
+
+        curve = pd.DataFrame(self.all_holdings)
+        curve.set_index('datetime', inplace = True)
+        curve['return'] = curve['total'].pct_change()
+        curve['equity_curve'] = (1.0+curve['returns']).cumprod()
+        self.equity_curve = curve
+
+    def output_summary_stats(self):
+        total_return = self.equity_curve['equity_curve'][-1]
+        returns = self.equity_curve['returns']
+        pnl = self.equity_curve['equity_curve']
+
+        sharpe_ratio = create_sharpe_ratio(returns, periods=252*60*6.5)
+        drawdown, max_dd, dd_duration = create_drawdowns(pnl)
+        self.equity_curve['drawdown'] = drawdown
+
+        stats = [("Total Return", "%0.2f%%" % ((total_return - 1)*100.0)),
+                 ("Sharpe Ratio", "%0.2f" % sharpe_ratio),
+                 ("Max Drawdown", "%0.2f%%" % (max_dd * 100.0)),
+                 ("Drawdown Duration", "%d" % dd_duration)]
+
+        self.equity_curve.to_csv("equity.csv")
+        return stats

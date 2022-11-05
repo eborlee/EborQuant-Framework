@@ -35,7 +35,7 @@ class SignalEvent(Event):
     Handles the event of sending a Signal from a strategy object.
     This is received by a portfolio object and acted upon
     """
-    def __init__(self, symbol, datetime, signal_type):
+    def __init__(self, strategy_id, symbol, datetime, signal_type, strength):
         """
         Initialises the SignalEvent
 
@@ -47,6 +47,9 @@ class SignalEvent(Event):
             The timestamp at which the signal was generated
         signal_type : TYPE
             Long or Short
+        strength:
+            Adjustment factor "suggestion" used to scale quantity at the portfolio level.
+            Userful for pairs strategies
 
         Returns
         -------
@@ -57,6 +60,8 @@ class SignalEvent(Event):
         self.symbol = symbol
         self.datetime = datetime
         self.signal_type = signal_type
+        self.strategy_id = strategy_id
+        self.strength = strength
         
 class OrderEvent(Event):
     """
@@ -90,6 +95,11 @@ class OrderEvent(Event):
         self.order_type = order_type
         self.quantity = quantity
         self.direction = direction
+
+    def print_order(self):
+
+        print("Order: Symbol=%s, Type=%s, Quantity=%s, Direction=%s" %
+              (self.symbol, self.order_type, self.quantity, self.direction))
         
 class FillEvent(Event):
     """
