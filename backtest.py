@@ -8,6 +8,7 @@ Created on Sun Oct 30 22:31:10 2022
 import datetime
 import queue
 import time
+import pprint
 
 class Backtest(object):
 
@@ -55,6 +56,7 @@ class Backtest(object):
 
         self.data_handler = self.data_handler_cls(self.events, self.csv_dir, self.symbol_list)
         self.strategy = self.strategy_cls(self.data_handler, self.events)
+        # 这里给portfolio实例传了个self.events队列进去 portfolio里的events也就得到了赋值
         self.portfolio = self.portfolio_cls(self.data_handler, self.events,
                                             self.start_date,
                                             self.initial_capital)
@@ -91,4 +93,42 @@ class Backtest(object):
 
                         elif event.type == 'SIGNAL':
                             self.signals += 1
+                            self.portfolio.update_signal(event) # 这个方法传入了一个signal event创建了一个order event
+
+                        elif event.type == "ORDER":
+                            self.orders += 1
+                            self.execution_handler.execute_order(event)
+
+                        elif event.type == "FILL":
+                            self.fills +=1
+                            self.portfolio.update_fill(event)
+
+                time.sleep(self.heartbeat)
+
+    def _output_performance(self):
+
+        self.portfolio.create_equity_curve_dataframe()
+
+        print("--- Summary Stats ---")
+        stats = self.portfolio.output_summary_stats()
+
+        print("--- Equity Curve ---")
+        print(self.portfolio.equity_curve.tail(10))
+        pprint.pprint(stats)
+
+        print("Signals: %s" % self.signals)
+        print("Orders: %s" % self.Orders)
+        print("Fills: %s" % self.Fills)
+
+
+    def simulate_trading(self):
+        """
+        Simulates the backtest and outputs portfolio performance
+        Returns
+        -------
+
+        """
+        self._run_backtest()
+        self._output_performance()
+
 

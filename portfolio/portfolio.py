@@ -230,8 +230,8 @@ class Portfolio(object):
         return order
 
 
-    def update_ginal(self, event):
-        if( event.type == "SIGNAL"):
+    def update_signal(self, event):
+        if(event.type == "SIGNAL"):
             order_event = self.generate_naive_order(event)
             self.events.put(order_event)
 
